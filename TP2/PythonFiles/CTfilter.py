@@ -16,6 +16,7 @@ def filterSinogram(sinogram):
 
 ## filter une ligne (projection) via FFT
 def filterLine(projection):
+    pass
 
     # votre code ici
     # un filtre rampe est suffisant    

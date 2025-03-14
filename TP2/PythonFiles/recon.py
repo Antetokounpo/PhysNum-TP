@@ -45,13 +45,26 @@ def laminogram():
     # initialiser une image reconstruite
     image = np.zeros((geo.nbvox, geo.nbvox))
 
+    center_voxel = (geo.nbvox - 1) / 2
+    center_pixel = (geo.nbpix - 1) / 2
+    scale = geo.voxsize / geo.pixsize
+
     # "etaler" les projections sur l'image
     # ceci sera fait de façon "voxel-driven"
     # pour chaque voxel, trouver la contribution du signal reçu
     for j in range(geo.nbvox): # colonnes de l'image
         print("working on image column: "+str(j+1)+"/"+str(geo.nbvox))
         for i in range(geo.nbvox): # lignes de l'image
+            x = j - center_voxel
+            y = i - center_voxel
             for a in range(len(angles)):
+                u = -x*np.cos(angles[a]) + y*np.sin(angles[a])
+                u *= scale
+
+                pixel_index = round(u + center_pixel)
+
+                #if 0 <= pixel_index < sinogram.shape[1]:
+                image[i, j] += sinogram[a, pixel_index]
                 #votre code ici...
                 #le défi est simplement géométrique;
                 #pour chaque voxel, trouver la position par rapport au centre de la
@@ -87,6 +100,7 @@ def backproject():
         print("working on image column: "+str(j+1)+"/"+str(geo.nbvox))
         for i in range(geo.nbvox): # lignes de l'image
             for a in range(len(angles)):
+                pass
                 #votre code ici
                #pas mal la même chose que prédédemment
             #mais avec un sinogramme qui aura été préalablement filtré
