@@ -15,8 +15,23 @@ def filterSinogram(sinogram):
         sinogram[i] = filterLine(sinogram[i])
 
 ## filter une ligne (projection) via FFT
+## filter une ligne (projection) via FFT
 def filterLine(projection):
-    pass
-
-    # votre code ici
-    # un filtre rampe est suffisant    
+    # Obtenir la taille de la projection
+    n = len(projection)
+    
+    # Calculer la FFT de la projection
+    proj_fft = np.fft.fft(projection)
+    
+    # Créer un filtre rampe dans le domaine fréquentiel
+    # Le filtre rampe est |f| où f est la fréquence
+    freq = np.fft.fftfreq(n)
+    ramp_filter = np.abs(freq)
+    
+    # Appliquer le filtre rampe
+    filtered_proj_fft = proj_fft * ramp_filter
+    
+    # Calculer la transformée de Fourier inverse pour revenir au domaine spatial
+    filtered_projection = np.real(np.fft.ifft(filtered_proj_fft))
+    
+    return filtered_projection

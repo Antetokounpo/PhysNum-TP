@@ -92,20 +92,36 @@ def backproject():
     ### option filtrer ###
     CTfilter.filterSinogram(sinogram)
     ######
-    
+    center_voxel = (geo.nbvox - 1) / 2
+    center_pixel = (geo.nbpix - 1) / 2
+    scale = geo.voxsize / geo.pixsize
     # "etaler" les projections sur l'image
     # ceci sera fait de façon "voxel-driven"
     # pour chaque voxel, trouver la contribution du signal reçu
     for j in range(geo.nbvox): # colonnes de l'image
         print("working on image column: "+str(j+1)+"/"+str(geo.nbvox))
         for i in range(geo.nbvox): # lignes de l'image
+            x = j - center_voxel
+            y = i - center_voxel
             for a in range(len(angles)):
-                pass
-                #votre code ici
-               #pas mal la même chose que prédédemment
-            #mais avec un sinogramme qui aura été préalablement filtré
-    
-    util.saveImage(image, "fbp")
+                u = -x*np.cos(angles[a]) + y*np.sin(angles[a])
+                u *= scale
+
+                pixel_index = round(u + center_pixel)
+
+                #if 0 <= pixel_index < sinogram.shape[1]:
+                image[i, j] += sinogram[a, pixel_index]
+                #votre code ici...
+                #le défi est simplement géométrique;
+                #pour chaque voxel, trouver la position par rapport au centre de la
+                #grille de reconstruction et déterminer la position d'arrivée
+                #sur le détecteur d'un rayon partant de ce point et atteignant
+                #le détecteur avec un angle de 90 degrés. Vous pouvez utiliser
+                #le pixel le plus proche ou interpoler linéairement...Rappel, le centre
+                #du détecteur est toujours aligné avec le centre de la grille de
+                #reconstruction peu importe l'angle.
+                
+    util.saveImage(image, "lam")
 
 
 ## reconstruire une image TDM en mode retroprojection
@@ -137,8 +153,8 @@ def reconFourierSlice():
 
 ## main ##
 start_time = time.time()
-laminogram()
-#backproject()
+#laminogram()
+backproject()
 #reconFourierSlice()
 print("--- %s seconds ---" % (time.time() - start_time))
 
