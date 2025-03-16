@@ -8,7 +8,7 @@
 # libs
 import numpy as np
 import time
-
+import matplotlib.pyplot as plt
 # local files
 import geo as geo
 import util as util
@@ -149,12 +149,45 @@ def reconFourierSlice():
    
     
     util.saveImage(image, "fft")
+def compareSinogram():
+    [nbprj, angles, sinogram] = readInput()
 
-
-## main ##
+    # S'assurer que le sinogramme est un tableau NumPy
+    sinogram = np.array(sinogram, dtype=float)
+    
+    # S'assurer que le sinogramme est un tableau NumPy et créer une copie pour le filtrage
+    sinogram = np.array(sinogram, dtype=float)
+    filtered_sinogram = sinogram.copy()
+    
+    # Filtrer le sinogramme (la fonction modifie filtered_sinogram en place)
+    CTfilter.filterSinogram(filtered_sinogram)
+    
+    # Afficher et comparer les sinogrammes
+    plt.figure(figsize=(14, 6))
+    
+    # Sinogramme original
+    plt.subplot(1, 2, 1)
+    plt.imshow(sinogram, cmap='gray', aspect='auto')
+    plt.title('Sinogramme original')
+    plt.colorbar()
+    
+    # Sinogramme filtré
+    plt.subplot(1, 2, 2)
+    plt.imshow(filtered_sinogram, cmap='gray', aspect='auto')
+    plt.title('Sinogramme filtré')
+    plt.colorbar()
+    
+    plt.tight_layout()
+    plt.savefig('comparison_sinograms.png')
+    plt.show()
+    
+    print("Dimensions du sinogramme:", sinogram.shape)
+    print("Comparaison des valeurs - Original: min =", np.min(sinogram), "max =", np.max(sinogram))
+    print("Comparaison des valeurs - Filtré: min =", np.min(filtered_sinogram), "max =", np.max(filtered_sinogram))
 start_time = time.time()
 #laminogram()
-backproject()
+#backproject()
 #reconFourierSlice()
+compareSinogram()
 print("--- %s seconds ---" % (time.time() - start_time))
 
