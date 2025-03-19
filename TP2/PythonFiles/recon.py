@@ -128,27 +128,25 @@ def backproject():
 def reconFourierSlice():
     
     [nbprj, angles, sinogram] = readInput()
-
-    # initialiser une image reconstruite, complexe
-    # pour qu'elle puisse contenir sa version FFT d'abord
-    IMAGE = np.zeros((geo.nbvox, geo.nbvox), 'complex')
-    
-    # conteneur pour la FFT du sinogramme
-    SINOGRAM = np.zeros(sinogram.shape, 'complex')
-
-    #image reconstruite
+    output_size = geo.nbvox
+    sinogram = sinogram.T
+    teta = np.sort(angles)
+    radius = output_size // 2
     image = np.zeros((geo.nbvox, geo.nbvox))
-    #votre code ici
-   #ici le défi est de remplir l'IMAGE avec des TF des projections (1D)
-   #au bon angle.
-   #La grille de recon est cartésienne mais le remplissage est cylindrique,
-   #ce qui fait qu'il y aura un bon échantillonnage de IMAGE
-   #au centre et moins bon en périphérie. Un TF inverse de IMAGE vous
-   #donnera l'image recherchée.
-
-   
-    
+    rs = np.linspace(-radius, radius, output_size)
+    xg, yg = np.meshgrid(rs, rs)
+    P = np.fft.fft(sinogram, axis=0)
+    nu = np.abs(np.fft.fftfreq(P.shape[0]))
+    integrand = P.T * nu
+    pprime = np.real(np.fft.ifft(integrand.T, axis=0))
+    xp = np.linspace(-radius, radius, sinogram.shape[0])
+    for col, angle in zip(pprime.T, teta):
+        t = yg*np.cos(angle) - xg*np.sin(angle)
+        interp = np.interp(t, xp, col)
+        image += interp
+    image = np.rot90(image.T, 3)
     util.saveImage(image, "fft")
+
 def compareSinogram():
     [nbprj, angles, sinogram] = readInput()
 
@@ -187,7 +185,7 @@ def compareSinogram():
 start_time = time.time()
 #laminogram()
 #backproject()
-#reconFourierSlice()
-compareSinogram()
+reconFourierSlice()
+# compareSinogram()
 print("--- %s seconds ---" % (time.time() - start_time))
 

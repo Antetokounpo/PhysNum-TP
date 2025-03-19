@@ -10,6 +10,7 @@
 # et de reconstruction
 
 import numpy as np
+import os
 
 ### VARIABLES ###
 
@@ -30,7 +31,7 @@ nbvox = 96 # options: 96, 192
 voxsize = 0.4 # option: 0.4, 0.2
 
 ## fichiers d'entrée
-dataDir = "TP2/PythonFiles/data/"
+dataDir = os.getcwd() + "/TP2/PythonFiles/data/"
 anglesFile = "angles.txt"
 sinogramFile = "sinogram-patient.txt"
 #sinogramFile = "sinogram-patient.txt"
