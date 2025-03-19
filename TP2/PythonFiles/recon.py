@@ -121,7 +121,7 @@ def backproject():
                 #du détecteur est toujours aligné avec le centre de la grille de
                 #reconstruction peu importe l'angle.
                 
-    util.saveImage(image, "lam")
+    util.saveImage(image, "fbp")
 
 
 ## reconstruire une image TDM en mode retroprojection
@@ -136,15 +136,15 @@ def reconFourierSlice():
     rs = np.linspace(-radius, radius, output_size)
     xg, yg = np.meshgrid(rs, rs)
     P = np.fft.fft(sinogram, axis=0)
-    nu = np.abs(np.fft.fftfreq(P.shape[0]))
-    integrand = P.T * nu
-    pprime = np.real(np.fft.ifft(integrand.T, axis=0))
-    xp = np.linspace(-radius, radius, sinogram.shape[0])
-    for col, angle in zip(pprime.T, teta):
-        t = yg*np.cos(angle) - xg*np.sin(angle)
-        interp = np.interp(t, xp, col)
-        image += interp
-    image = np.rot90(image.T, 3)
+    nu = np.fft.fftfreq(P.shape[0]) * P.shape[0]
+    uc = []
+    vc = []
+    fft_vals = []
+    for i, angle in enumerate(teta):
+        u = nu * np.cos(angle)
+        v = nu * np.sin(angle)
+        
+    
     util.saveImage(image, "fft")
 
 def compareSinogram():
