@@ -9,6 +9,7 @@
 import numpy as np
 import time
 import matplotlib.pyplot as plt
+import scipy.interpolate
 # local files
 import geo as geo
 import util as util
@@ -63,9 +64,8 @@ def laminogram():
 
                 pixel_index = round(u + center_pixel)
 
-                #if 0 <= pixel_index < sinogram.shape[1]:
                 image[i, j] += sinogram[a, pixel_index]
-                #votre code ici...
+
                 #le défi est simplement géométrique;
                 #pour chaque voxel, trouver la position par rapport au centre de la
                 #grille de reconstruction et déterminer la position d'arrivée
@@ -74,10 +74,7 @@ def laminogram():
                 #le pixel le plus proche ou interpoler linéairement...Rappel, le centre
                 #du détecteur est toujours aligné avec le centre de la grille de
                 #reconstruction peu importe l'angle.
-                
-                
-                
-                
+
     util.saveImage(image, "lam")
 
 
@@ -129,25 +126,32 @@ def reconFourierSlice():
     
     [nbprj, angles, sinogram] = readInput()
 
-    # initialiser une image reconstruite, complexe
-    # pour qu'elle puisse contenir sa version FFT d'abord
-    IMAGE = np.zeros((geo.nbvox, geo.nbvox), 'complex')
-    
-    # conteneur pour la FFT du sinogramme
-    SINOGRAM = np.zeros(sinogram.shape, 'complex')
+    center_voxel = (geo.nbvox - 1) / 2
+    center_pixel = (geo.nbpix - 1) / 2
 
-    #image reconstruite
-    image = np.zeros((geo.nbvox, geo.nbvox))
-    #votre code ici
-   #ici le défi est de remplir l'IMAGE avec des TF des projections (1D)
-   #au bon angle.
-   #La grille de recon est cartésienne mais le remplissage est cylindrique,
-   #ce qui fait qu'il y aura un bon échantillonnage de IMAGE
-   #au centre et moins bon en périphérie. Un TF inverse de IMAGE vous
-   #donnera l'image recherchée.
+    # Aucune idée pourquoi on fait un ifftshift
+    sinogram_fft = np.fft.fftshift(np.fft.fft(np.fft.ifftshift(sinogram, axes=1), axis=1), axes=1)
 
-   
-    
+    # C'est des coordonnées polaires... Pourquoi les normes vont dans le négatif?
+    theta_grid, rho_grid = np.meshgrid(angles, (np.arange(sinogram.shape[1]) - center_pixel)*geo.pixsize, indexing='ij')
+
+    # Conversion en cartésien
+    x_grid = rho_grid * np.cos(theta_grid)
+    y_grid = rho_grid * np.sin(theta_grid)
+
+    values = sinogram_fft.ravel()
+    values_coordinates = np.column_stack((x_grid.ravel(), y_grid.ravel()))
+
+    a = (geo.nbvox - 1) // 2 * geo.voxsize
+    voxel_meshgrid = np.meshgrid(np.linspace(-a, a, geo.nbvox*2), np.linspace(-a, a, geo.nbvox*2))
+
+    # Magie
+    image_fft = scipy.interpolate.griddata(values_coordinates, values, voxel_meshgrid, method='nearest')
+    plt.figure()
+    plt.imshow(image_fft.real)
+    plt.show()
+    image = np.fft.fftshift(np.fft.ifft2(np.fft.ifftshift(image_fft))).real
+
     util.saveImage(image, "fft")
 def compareSinogram():
     [nbprj, angles, sinogram] = readInput()
@@ -185,9 +189,10 @@ def compareSinogram():
     print("Comparaison des valeurs - Original: min =", np.min(sinogram), "max =", np.max(sinogram))
     print("Comparaison des valeurs - Filtré: min =", np.min(filtered_sinogram), "max =", np.max(filtered_sinogram))
 start_time = time.time()
+
 #laminogram()
 #backproject()
-#reconFourierSlice()
-compareSinogram()
+reconFourierSlice()
+#compareSinogram()
 print("--- %s seconds ---" % (time.time() - start_time))
 
