@@ -9,7 +9,7 @@
 import numpy as np
 import time
 import matplotlib.pyplot as plt
-import scipy.interpolate
+import scipy as sp
 # local files
 import geo as geo
 import util as util
@@ -125,33 +125,29 @@ def backproject():
 def reconFourierSlice():
     
     [nbprj, angles, sinogram] = readInput()
-
-    center_voxel = (geo.nbvox - 1) / 2
-    center_pixel = (geo.nbpix - 1) / 2
-
-    # Aucune idée pourquoi on fait un ifftshift
-    sinogram_fft = np.fft.fftshift(np.fft.fft(np.fft.ifftshift(sinogram, axes=1), axis=1), axes=1)
-
-    # C'est des coordonnées polaires... Pourquoi les normes vont dans le négatif?
-    theta_grid, rho_grid = np.meshgrid(angles, (np.arange(sinogram.shape[1]) - center_pixel)*geo.pixsize, indexing='ij')
-
-    # Conversion en cartésien
-    x_grid = rho_grid * np.cos(theta_grid)
-    y_grid = rho_grid * np.sin(theta_grid)
-
-    values = sinogram_fft.ravel()
-    values_coordinates = np.column_stack((x_grid.ravel(), y_grid.ravel()))
-
-    a = (geo.nbvox - 1) // 2 * geo.voxsize
-    voxel_meshgrid = np.meshgrid(np.linspace(-a, a, geo.nbvox*2), np.linspace(-a, a, geo.nbvox*2))
-
-    # Magie
-    image_fft = scipy.interpolate.griddata(values_coordinates, values, voxel_meshgrid, method='nearest')
-    plt.figure()
-    plt.imshow(image_fft.real)
-    plt.show()
-    image = np.fft.fftshift(np.fft.ifft2(np.fft.ifftshift(image_fft))).real
-
+    dim = sinogram.shape[1] # nombre de projections et dimension de l'image finale
+    P = np.fft.fftshift(np.fft.fft(np.fft.ifftshift(sinogram, axes=1), axis=1), axes=1) # On fait la TF de
+    # chaque projections et on centre le DC (Freq=0)
+    P = P.ravel()
+    
+    # grille polaire dans l'espace de Fourier
+    r = np.arange(dim) - dim / 2
+    r, a = np.meshgrid(r, angles)
+    r = r.ravel()
+    a = a.ravel()
+    srcx = (dim / 2) + r*np.cos(a)
+    srcy = (dim / 2) + r*np.sin(a)
+    
+    # On construit une grille cartésienne qui servira pour l'interpolation
+    dstx, dsty = np.meshgrid(np.arange(dim), np.arange(dim))
+    dstx = dstx.ravel()
+    dsty = dsty.ravel()
+    
+    # Interpolation par la méthode des "voisins proches" de la grille polaire vers la grille cartésienne 
+    fft2 = sp.interpolate.griddata((srcx, srcy), P, (dstx, dsty), method="nearest").reshape((dim, dim))
+    recon = np.real(np.fft.fftshift(np.fft.ifft2(np.fft.ifftshift(fft2)))) # Retour dans l'espace temporel,
+    # on fait la TF inverse 2D et on shift pour que le résultat s'affiche comme il faut
+    image = np.rot90(recon.T, -1) # On réoriente l'image reconstruite
     util.saveImage(image, "fft")
 
 def compareSinogram():
@@ -191,9 +187,9 @@ def compareSinogram():
     print("Comparaison des valeurs - Filtré: min =", np.min(filtered_sinogram), "max =", np.max(filtered_sinogram))
 start_time = time.time()
 
-#laminogram()
-#backproject()
-reconFourierSlice()
-#compareSinogram()
-print("--- %s seconds ---" % (time.time() - start_time))
+# laminogram()
+# backproject()
+# reconFourierSlice()
+# compareSinogram()
+# print("--- %s seconds ---" % (time.time() - start_time))
 
